@@ -10,9 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+type TabType = 'dashboard' | 'badges' | 'study' | 'mindmaps' | 'referrals';
+
 interface NavigationProps {
-  activeTab: 'dashboard' | 'badges' | 'study';
-  onTabChange: (tab: 'dashboard' | 'badges' | 'study') => void;
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
 }
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
@@ -22,6 +24,8 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
     { id: 'dashboard' as const, label: 'Dashboard' },
     { id: 'badges' as const, label: 'Logros' },
     { id: 'study' as const, label: 'Estudiar' },
+    { id: 'mindmaps' as const, label: 'Mapas' },
+    { id: 'referrals' as const, label: 'Referidos' },
   ];
 
   return (
