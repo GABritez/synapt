@@ -3,9 +3,13 @@ import { Navigation } from "@/components/Navigation";
 import { Dashboard } from "@/components/Dashboard";
 import { BadgesPage } from "@/components/BadgesPage";
 import { StudyPage } from "@/components/StudyPage";
+import { MindMapsPage } from "@/components/MindMapsPage";
+import { ReferralsPage } from "@/components/ReferralsPage";
+
+type TabType = 'dashboard' | 'badges' | 'study' | 'mindmaps' | 'referrals';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'badges' | 'study'>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -20,6 +24,8 @@ const Index = () => {
         {activeTab === 'dashboard' && <Dashboard />}
         {activeTab === 'badges' && <BadgesPage />}
         {activeTab === 'study' && <StudyPage />}
+        {activeTab === 'mindmaps' && <MindMapsPage />}
+        {activeTab === 'referrals' && <ReferralsPage />}
       </main>
     </div>
   );
