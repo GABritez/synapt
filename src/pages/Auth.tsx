@@ -23,7 +23,9 @@ const Auth = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session) {
+        if (event === "PASSWORD_RECOVERY") {
+          navigate("/update-password", { replace: true });
+        } else if (session) {
           navigate("/dashboard", { replace: true });
         }
       }
