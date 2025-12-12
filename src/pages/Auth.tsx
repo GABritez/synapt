@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SynaptLogo } from "@/components/SynaptLogo";
 import { useToast } from "@/hooks/use-toast";
+import { ForgotPasswordDialog } from "@/components/ForgotPasswordDialog";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 
 const Auth = () => {
@@ -15,6 +16,7 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -184,6 +186,18 @@ const Auth = () => {
               </div>
             </div>
 
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -196,6 +210,11 @@ const Auth = () => {
                 : "Crear Cuenta"}
             </Button>
           </form>
+
+          <ForgotPasswordDialog
+            open={forgotPasswordOpen}
+            onOpenChange={setForgotPasswordOpen}
+          />
 
           {/* Toggle */}
           <div className="mt-6 text-center">
