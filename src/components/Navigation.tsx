@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { SynaptLogo } from "./SynaptLogo";
-import { Button } from "./ui/button";
 import { Menu, X, User, Settings, LogOut } from "lucide-react";
 import {
   DropdownMenu,
@@ -9,6 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { Skeleton } from "./ui/skeleton";
 
 type TabType = 'dashboard' | 'badges' | 'study' | 'mindmaps' | 'referrals';
 
@@ -19,6 +20,7 @@ interface NavigationProps {
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { signOut, getUserInitial, loading } = useAuth();
 
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard' },
@@ -27,6 +29,10 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
     { id: 'mindmaps' as const, label: 'Mapas' },
     { id: 'referrals' as const, label: 'Referidos' },
   ];
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <nav className="fixed w-full z-50 glass-panel border-b border-border/50">
@@ -60,9 +66,13 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center space-x-2 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-sm">
-                    M
-                  </div>
+                  {loading ? (
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      {getUserInitial()}
+                    </div>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -75,7 +85,10 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                   Configuración
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem 
+                  className="text-destructive cursor-pointer"
+                  onClick={handleLogout}
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Cerrar Sesión
                 </DropdownMenuItem>
@@ -112,6 +125,13 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               {item.label}
             </button>
           ))}
+          <button
+            onClick={handleLogout}
+            className="w-full text-left px-4 py-3 rounded-lg font-medium text-destructive hover:bg-destructive/10 transition-all"
+          >
+            <LogOut className="inline-block mr-2 h-4 w-4" />
+            Cerrar Sesión
+          </button>
         </div>
       )}
     </nav>
