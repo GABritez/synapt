@@ -5,6 +5,8 @@ import { StreakDisplay } from "./StreakDisplay";
 import { ProgressChart } from "./ProgressChart";
 import { TopicRecommendation } from "./TopicRecommendation";
 import { TopicsProgress } from "./TopicsProgress";
+import { Skeleton } from "./ui/skeleton";
+import { useAuth } from "@/hooks/useAuth";
 
 // Mock data
 const progressData = [
@@ -45,13 +47,20 @@ const recommendedTopic = {
 };
 
 export function Dashboard() {
+  const { getUserDisplayName, loading } = useAuth();
+  const displayName = getUserDisplayName();
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            ¡Hola, <span className="gradient-text">María</span>!
+            ¡Hola, {loading ? (
+              <Skeleton className="inline-block h-8 w-24 align-middle" />
+            ) : (
+              <span className="gradient-text">{displayName}</span>
+            )}!
           </h1>
           <p className="text-muted-foreground mt-1">Tu progreso de hoy está siendo increíble</p>
         </div>
