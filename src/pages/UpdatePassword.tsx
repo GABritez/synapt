@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SynaptLogo } from "@/components/SynaptLogo";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff, Lock, Loader2, AlertCircle } from "lucide-react";
+
+type SessionState = "verifying" | "ready" | "expired";
 
 const UpdatePassword = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -14,7 +16,50 @@ const UpdatePassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sessionState, setSessionState] = useState<SessionState>("verifying");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let isMounted = true;
+    let retryTimeout: NodeJS.Timeout;
+
+    const verifySession = async () => {
+      // First check: immediate session check
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        if (isMounted) setSessionState("ready");
+        return;
+      }
+
+      // Second check: wait 2 seconds for Supabase to consume the hash token
+      retryTimeout = setTimeout(async () => {
+        const { data: { session: retrySession } } = await supabase.auth.getSession();
+        
+        if (retrySession) {
+          if (isMounted) setSessionState("ready");
+        } else {
+          // Final state: session not found
+          if (isMounted) setSessionState("expired");
+        }
+      }, 2000);
+    };
+
+    // Listen for auth state changes (PASSWORD_RECOVERY event)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" && session) {
+        if (isMounted) setSessionState("ready");
+      }
+    });
+
+    verifySession();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(retryTimeout);
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +90,59 @@ const UpdatePassword = () => {
     }
   };
 
+  // Verifying state - show loader
+  if (sessionState === "verifying") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+        <div className="fixed inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-[0.03] pointer-events-none" />
+        <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[150px] opacity-20 pointer-events-none" />
+        <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-success/20 rounded-full blur-[120px] opacity-10 pointer-events-none" />
+        
+        <div className="w-full max-w-md mx-4 relative z-10">
+          <div className="glass-panel p-8 rounded-2xl border border-border/50 text-center">
+            <div className="flex justify-center mb-8">
+              <SynaptLogo className="h-10" />
+            </div>
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Verificando enlace...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Expired state - show error with resend option
+  if (sessionState === "expired") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
+        <div className="fixed inset-0 bg-grid-pattern bg-[length:40px_40px] opacity-[0.03] pointer-events-none" />
+        <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[150px] opacity-20 pointer-events-none" />
+        <div className="fixed bottom-0 left-0 w-[400px] h-[400px] bg-success/20 rounded-full blur-[120px] opacity-10 pointer-events-none" />
+        
+        <div className="w-full max-w-md mx-4 relative z-10">
+          <div className="glass-panel p-8 rounded-2xl border border-border/50 text-center">
+            <div className="flex justify-center mb-8">
+              <SynaptLogo className="h-10" />
+            </div>
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h1 className="text-xl font-bold text-foreground mb-2">
+              Enlace expirado o inválido
+            </h1>
+            <p className="text-muted-foreground text-sm mb-6">
+              El enlace de recuperación ha expirado o ya fue utilizado. Por favor, solicita uno nuevo.
+            </p>
+            <Link to="/auth">
+              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                Solicitar nuevo enlace
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Ready state - show password form
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
       {/* Background elements */}
