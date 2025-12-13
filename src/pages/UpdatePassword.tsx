@@ -21,12 +21,43 @@ const UpdatePassword = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let retryTimeout: NodeJS.Timeout;
+    let retryTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    const attemptTokenRecovery = async () => {
+      // Try to recover session manually from URL hash (access_token)
+      const rawHash = window.location.hash || "";
+      const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
+
+      if (!hash) {
+        if (isMounted) setSessionState("expired");
+        return;
+      }
+
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get("access_token");
+
+      if (!accessToken) {
+        if (isMounted) setSessionState("expired");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(accessToken);
+
+        if (error || !data.session) {
+          if (isMounted) setSessionState("expired");
+        } else if (isMounted) {
+          setSessionState("ready");
+        }
+      } catch {
+        if (isMounted) setSessionState("expired");
+      }
+    };
 
     const verifySession = async () => {
       // First check: immediate session check
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
         if (isMounted) setSessionState("ready");
         return;
@@ -35,12 +66,12 @@ const UpdatePassword = () => {
       // Second check: wait 2 seconds for Supabase to consume the hash token
       retryTimeout = setTimeout(async () => {
         const { data: { session: retrySession } } = await supabase.auth.getSession();
-        
+
         if (retrySession) {
           if (isMounted) setSessionState("ready");
         } else {
-          // Final state: session not found
-          if (isMounted) setSessionState("expired");
+          // Final attempt: manually recover session from URL
+          await attemptTokenRecovery();
         }
       }, 2000);
     };
@@ -56,7 +87,7 @@ const UpdatePassword = () => {
 
     return () => {
       isMounted = false;
-      clearTimeout(retryTimeout);
+      if (retryTimeout) clearTimeout(retryTimeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -104,7 +135,7 @@ const UpdatePassword = () => {
               <SynaptLogo className="h-10" />
             </div>
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Verificando enlace...</p>
+            <p className="text-muted-foreground">Verificando enlace de seguridad...</p>
           </div>
         </div>
       </div>
@@ -232,7 +263,7 @@ const UpdatePassword = () => {
             <Button
               type="submit"
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-              disabled={loading}
+              disabled={loading || sessionState !== "ready"}
             >
               {loading ? "Actualizando..." : "Actualizar Contraseña"}
             </Button>
