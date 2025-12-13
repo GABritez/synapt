@@ -19,16 +19,10 @@ const AuthRescue = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   useEffect(() => {
-    // Check URL hash for recovery tokens (fail-safe)
-    const hash = window.location.hash;
-    if (hash.includes("access_token") && hash.includes("type=recovery")) {
-      navigate("/update-password", { replace: true });
-      return;
-    }
-
-    // Listen for PASSWORD_RECOVERY event
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+    // Listen for PASSWORD_RECOVERY event ONLY - let Supabase consume the hash first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" && session) {
+        // Only navigate after Supabase has consumed the token and established session
         navigate("/update-password", { replace: true });
       }
     });
