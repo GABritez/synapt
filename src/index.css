@@ -35,6 +35,10 @@
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
+    
+    /* Streak/Fire accent (Orange/Amber) */
+    --streak: 25 95% 53%;
+    --streak-foreground: 0 0% 100%;
 
     --border: 217 33% 25%;
     --input: 217 33% 25%;
