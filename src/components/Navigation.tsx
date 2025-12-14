@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SynaptLogo } from "./SynaptLogo";
 import { Menu, X, User, Settings, LogOut } from "lucide-react";
 import {
@@ -21,6 +22,7 @@ interface NavigationProps {
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { signOut, getUserInitial, loading } = useAuth();
+  const navigate = useNavigate();
 
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard' },
@@ -75,12 +77,18 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                   )}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-48 bg-popover border-border">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => navigate("/profile")}
+                >
                   <User className="mr-2 h-4 w-4" />
                   Mi Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => navigate("/settings")}
+                >
                   <Settings className="mr-2 h-4 w-4" />
                   Configuración
                 </DropdownMenuItem>
