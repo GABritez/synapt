@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { Skeleton } from "./ui/skeleton";
 
 type TabType = 'dashboard' | 'badges' | 'study' | 'mindmaps' | 'referrals';
@@ -22,6 +23,7 @@ interface NavigationProps {
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { signOut, getUserInitial, loading } = useAuth();
+  const { profile, isLoading: profileLoading } = useProfile();
   const navigate = useNavigate();
 
   const navItems = [
@@ -65,6 +67,13 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
+            {profileLoading ? (
+              <Skeleton className="h-4 w-24" />
+            ) : profile?.full_name ? (
+              <span className="text-sm text-muted-foreground">
+                Hola, <span className="text-foreground font-medium">{profile.full_name}</span>
+              </span>
+            ) : null}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center space-x-2 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors">

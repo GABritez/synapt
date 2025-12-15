@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
-import { ArrowLeft, Camera, Loader2, User } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
+import { ArrowLeft, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,10 +30,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export default function Profile() {
   const navigate = useNavigate();
   const { user, loading: authLoading, getUserInitial } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const { profile, isLoading, updateProfile, isUpdating, uploadAvatar, isUploadingAvatar } = useProfile();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -48,117 +44,33 @@ export default function Profile() {
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth", { replace: true });
-      return;
-    }
-
-    if (user) {
-      fetchProfile();
     }
   }, [user, authLoading, navigate]);
 
-  const fetchProfile = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        form.reset({
-          full_name: data.full_name || "",
-          username: data.username || "",
-          bio: data.bio || "",
-        });
-        setAvatarUrl(data.avatar_url);
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      toast.error("Error al cargar el perfil");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        full_name: profile.full_name || "",
+        username: profile.username || "",
+        bio: profile.bio || "",
+      });
     }
+  }, [profile, form]);
+
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    uploadAvatar(event.target.files[0]);
   };
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !event.target.files || event.target.files.length === 0) return;
-
-    const file = event.target.files[0];
-    const fileExt = file.name.split(".").pop();
-    const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
-
-    setUploading(true);
-
-    try {
-      // Upload file
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      const newAvatarUrl = urlData.publicUrl;
-
-      // Update profile
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: newAvatarUrl })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
-      setAvatarUrl(newAvatarUrl);
-      toast.success("Avatar actualizado");
-    } catch (error) {
-      console.error("Error uploading avatar:", error);
-      toast.error("Error al subir la imagen");
-    } finally {
-      setUploading(false);
-    }
+  const onSubmit = (values: ProfileFormValues) => {
+    updateProfile({
+      full_name: values.full_name || null,
+      username: values.username || null,
+      bio: values.bio || null,
+    });
   };
 
-  const onSubmit = async (values: ProfileFormValues) => {
-    if (!user) return;
-
-    setSaving(true);
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          full_name: values.full_name || null,
-          username: values.username || null,
-          bio: values.bio || null,
-        });
-
-      if (error) {
-        if (error.code === "23505") {
-          toast.error("Este nombre de usuario ya está en uso");
-          return;
-        }
-        throw error;
-      }
-
-      toast.success("Perfil actualizado correctamente");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Error al guardar los cambios");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (authLoading || loading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -209,7 +121,7 @@ export default function Profile() {
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative group">
                     <Avatar className="h-24 w-24 border-2 border-border">
-                      <AvatarImage src={avatarUrl || undefined} />
+                      <AvatarImage src={profile?.avatar_url || undefined} />
                       <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60 text-primary-foreground text-2xl font-bold">
                         {getUserInitial()}
                       </AvatarFallback>
@@ -218,7 +130,7 @@ export default function Profile() {
                       htmlFor="avatar-upload"
                       className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
-                      {uploading ? (
+                      {isUploadingAvatar ? (
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       ) : (
                         <Camera className="h-6 w-6 text-primary" />
@@ -228,8 +140,8 @@ export default function Profile() {
                       id="avatar-upload"
                       type="file"
                       accept="image/*"
-                      onChange={uploadAvatar}
-                      disabled={uploading}
+                      onChange={handleAvatarUpload}
+                      disabled={isUploadingAvatar}
                       className="hidden"
                     />
                   </div>
@@ -296,10 +208,10 @@ export default function Profile() {
 
                 <Button
                   type="submit"
-                  disabled={saving}
+                  disabled={isUpdating}
                   className="w-full"
                 >
-                  {saving ? (
+                  {isUpdating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Guardando...
