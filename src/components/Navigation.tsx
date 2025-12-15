@@ -66,14 +66,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
           </div>
 
           {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            {profileLoading ? (
-              <Skeleton className="h-4 w-24" />
-            ) : profile?.full_name ? (
-              <span className="text-sm text-muted-foreground">
-                Hola, <span className="text-foreground font-medium">{profile.full_name}</span>
-              </span>
-            ) : null}
+          <div className="hidden md:flex items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center space-x-2 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors">

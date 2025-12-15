@@ -6,7 +6,7 @@ import { ProgressChart } from "./ProgressChart";
 import { TopicRecommendation } from "./TopicRecommendation";
 import { TopicsProgress } from "./TopicsProgress";
 import { Skeleton } from "./ui/skeleton";
-import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 // Mock data
 const progressData = [
@@ -47,8 +47,7 @@ const recommendedTopic = {
 };
 
 export function Dashboard() {
-  const { getUserDisplayName, loading } = useAuth();
-  const displayName = getUserDisplayName();
+  const { profile, isLoading } = useProfile();
 
   return (
     <div className="space-y-8">
@@ -56,10 +55,10 @@ export function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            ¡Hola, {loading ? (
-              <Skeleton className="inline-block h-8 w-24 align-middle" />
+            ¡Hola, {isLoading ? (
+              <Skeleton className="inline-block h-8 w-32 align-middle" />
             ) : (
-              <span className="gradient-text">{displayName}</span>
+              <span className="gradient-text">{profile?.full_name || 'Usuario'}</span>
             )}!
           </h1>
           <p className="text-muted-foreground mt-1">Tu progreso de hoy está siendo increíble</p>
